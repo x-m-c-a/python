@@ -3,25 +3,58 @@ from tensorflow.keras import layers, models
 import numpy as np  
 import matplotlib.pyplot as plt
 
-def create_lenet5(input_shape=(32, 32, 1)):  
-    model = models.Sequential()  
-      
-    # 第一层卷积层 + 池化层  
-    model.add(layers.Conv2D(6, (5, 5), activation='relu', input_shape=input_shape))  
-    model.add(layers.AveragePooling2D((2, 2)))  
-      
-    # 第二层卷积层 + 池化层  
-    model.add(layers.Conv2D(16, (5, 5), activation='relu'))  
-    model.add(layers.AveragePooling2D((2, 2)))  
-      
-    # 展平层  
-    model.add(layers.Flatten())  
-      
-    # 全连接层  
-    model.add(layers.Dense(120, activation='relu'))  
-    model.add(layers.Dense(84, activation='relu'))  
-      
-    # 输出层  
-    model.add(layers.Dense(10, activation='softmax'))  
-      
+def create_lenet5(input_shape=(32, 32, 1), num_classes=10):
+    model = models.Sequential()
+    
+    # 第一层卷积层
+    model.add(layers.Conv2D(6, (5, 5), activation='tanh', input_shape=input_shape))
+    model.add(layers.AveragePooling2D(pool_size=(2, 2)))
+    
+    # 第二层卷积层
+    model.add(layers.Conv2D(16, (5, 5), activation='tanh'))
+    model.add(layers.AveragePooling2D(pool_size=(2, 2)))
+    
+    # 第三层卷积层
+    model.add(layers.Conv2D(120, (5, 5), activation='tanh'))
+    
+    # 展平层
+    model.add(layers.Flatten())
+    
+    # 全连接层
+    model.add(layers.Dense(84, activation='tanh'))
+    model.add(layers.Dense(num_classes, activation='softmax'))
+    
     return model
+
+# 创建 LeNet-5 模型
+lenet5_model = create_lenet5()
+
+# 编译模型
+lenet5_model.compile(optimizer='adam',
+                     loss='sparse_categorical_crossentropy',
+                     metrics=['accuracy'])
+
+# 加载 MNIST 数据集
+mnist = tf.keras.datasets.mnist
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# 数据预处理
+x_train = x_train.reshape((x_train.shape[0], 32, 32, 1)).astype('float32') / 255
+x_test = x_test.reshape((x_test.shape[0], 32, 32, 1)).astype('float32') / 255
+
+# 训练模型
+lenet5_model.fit(x_train, y_train, epochs=10, batch_size=64, validation_data=(x_test, y_test))
+
+# 测试模型
+test_loss, test_accuracy = lenet5_model.evaluate(x_test, y_test)
+print(f'Test accuracy: {test_accuracy:.4f}')
+
+# 可视化一些测试结果
+predictions = lenet5_model.predict(x_test)
+
+# 显示前10个测试样本及其预测结果
+for i in range(10):
+    plt.imshow(x_test[i].reshape(32, 32), cmap='gray')
+    plt.title(f'Predicted: {predictions[i].argmax()}, Actual: {y_test[i]}')
+    plt.axis('off')
+    plt.show()
