@@ -1,0 +1,57 @@
+import jieba
+from collections import Counter
+from torch.utils.data import Dataset, DataLoader
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
+# 直接在代码中定义数据
+data = {
+    'text': [
+        "我爱这部电影"， "这是一部伟大的电影", "我讨厌这部电影", "这部电影很糟糕",
+        "演技非常出色"， "剧情很无聊", "导演非常棒", "故事很感人",
+        "音乐很动听"， "画面很美", "演员表现很好", "剧情很复杂",
+        "情节很紧凑"， "特效很震撼", "角色塑造得很好", "故事很平淡",
+        "场景设计很棒"， "剧情很有趣", "演员演技很差", "剧情拖沓",
+        "特效一般"， "故事很深刻", "音乐很好听", "画面很清晰",
+        "演员表现一般"， "剧情很曲折", "情节很吸引人", "特效很逼真",
+        "角色很有魅力"， "故事很精彩", "场景设计一般", "剧情很平淡",
+        "演员表现优秀"， "剧情很紧凑", "情节很生动", "特效很出色",
+        "角色塑造得很差"， "故事很一般", "场景设计出色", "剧情很有趣",
+        "演员表现糟糕"， "剧情很精彩", "情节很吸引人", "特效很震撼",
+        "角色很有魅力"， "故事很平淡", "场景设计一般", "剧情很平淡",
+        "演员表现优秀"， "剧情很紧凑", "情节很生动", "特效很出色"
+    ],
+    'label': [1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0]
+}
+
+train_x = data['text']
+train_y = data['label']
+
+# 分词
+train_x = [list(jieba.cut(x)) for x in train_x]
+
+# 停用词过滤
+with open(r'C:\Users\LENOVO\.jupyter\hit_stopwords.txt', 'r', encoding='UTF8') as f:
+    stop_words = [word.strip() for word in f.readlines()]
+
+def drop_stopword(datas):
+    for data in datas:
+        for word in data[:]:
+            if word in stop_words:
+                data.remove(word)
+    return datas
+
+train_x = drop_stopword(train_x)
+
+# 构建词汇表
+def build_vocab(texts, min_count=1):
+    all_words = [word for doc in texts for word in doc]
+    word_counts = Counter(all_words)
+    vocab = [word for word, count in word_counts.items() if count >= min_count]
+    word2index = {word: idx for idx, word in enumerate(vocab)}
+    index2word = {idx: word for word, idx in word2index.items()}
+    return vocab, word2index, index2word
+
+vocab, word2index, index2word = build_vocab(train_x)
